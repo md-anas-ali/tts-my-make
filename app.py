@@ -1,7 +1,7 @@
 import subprocess
 import tempfile
 import os
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Response
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -35,6 +35,19 @@ async def tts(request: SpeechRequest):
     if fmt == "wav":
         audio_bytes = open(wav_path, "rb").read()
         os.remove(wav_path)
+        return Response(content=audio_bytes, media_type="audio/wav")
+
+    # Convert WAV → MP3 using ffmpeg
+    mp3_path = wav_path.replace(".wav", ".mp3")
+    subprocess.run([
+        "ffmpeg", "-y", "-i", wav_path, mp3_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    audio_bytes = open(mp3_path, "rb").read()
+    os.remove(wav_path)
+    os.remove(mp3_path)
+
+    return Response(content=audio_bytes, media_type="audio/mpeg")        os.remove(wav_path)
         return Response(content=audio_bytes, media_type="audio/wav")
 
     # Convert WAV → MP3 using ffmpeg
